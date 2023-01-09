@@ -210,28 +210,6 @@ function auto_install_tool() {
       ;;
     esac
 
-    # MINGW for Windows
-    if [[ "${OS}" == *"MINGW"* ]]; then
-      if ! [ -x "$(command -v choco)" ]; then
-        # call outer windows bat to install chocolatey
-        ./install_chocolatey.bat
-        if [[ $? -ne 0 ]]; then
-          printf "\033[31mError: 必要文件install_chocolatey.bat缺失，请将install_chocolatey.bat放置于与当前sh脚本同路径下\033[0m\n" >&2
-          exit 1
-        fi
-        if ! [ -x "$(command -v choco)" ]; then
-          printf "\033[31mError: Chocolatey安装失败！请手动安装Chocolatey，或手动安装必要软件jq！【注意：手动下载jq后请重命名jq-win64.bat重命名为jq.bat并放到与sh脚本同路径下】 \033[0m\n" >&2
-          exit 1
-        fi
-        exit 1
-      fi
-      choco install jq
-      if ! [ -x "$(command -v jq)" ]; then
-        printf "\033[31mError: Chocolatey安装失败！请手动安装Chocolatey，或手动安装必要软件jq！【注意：手动下载jq后请重命名jq-win64.bat重命名为jq.bat并放到与sh脚本同路径下】 \033[0m\n" >&2
-        exit 1
-      fi
-    fi
-
     # check if jq is installed successfully
     jq --version >/dev/null 2>&1
     if [ $? -ne 0 ]; then
