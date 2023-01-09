@@ -1,9 +1,6 @@
 #!/bin/bash
 # shellcheck disable=SC2181
 
-# TODO: 优化点：把一些公共的逻辑，或者复杂的逻辑抽成函数调用，如jq异常处理，如判空函数，判非空函数，还有请求project, 请求assignee，创建merge_request
-# TODO：优化点：help user to install necessary tools or libs automatically by their using operation system version
-
 DEFAULT_PROJECTS=(
   "o2-consignment-b2c"
   "o2-tmall-integration"
@@ -191,6 +188,7 @@ function auto_install_tool() {
   local arch
   # check if jq is installed
   jq --version >/dev/null 2>&1
+  local windows_os_flag=0
   if [ $? -ne 0 ]; then
     # jq is not installed
     # check the operating system type
@@ -210,11 +208,19 @@ function auto_install_tool() {
       ;;
     esac
 
+    if [[ "${OS}" == *"MINGW"* ]]; then
+      windows_os_flag=1
+    fi
+
     # check if jq is installed successfully
     jq --version >/dev/null 2>&1
     if [ $? -ne 0 ]; then
-      # jq installation failed
-      printf "\033[31mError: jq is still not installed. 请手动安装必要软件jq! \033[0m\n" >&2
+      if [[ ${windows_os_flag} == 1 ]]; then
+        printf "\033[31mError: 必要组件jq.exe不存在，请检查当前脚本所在文件夹内是否包含必需的文件jq.exe! \033[0m\n" >&2
+      else
+        printf "\033[31mError: jq自动安装失败，请手动安装必要软件jq! \033[0m\n" >&2
+      fi
+      # exit for jq installation failed
       exit 1
     fi
   fi
