@@ -57,13 +57,12 @@ function check_empty() {
 
 # be compatible for different operations
 function compatible_jq() {
-  local options=$1
   local jq_result
   if [[ "${OS}" == *"MINGW"* ]]; then
     # windows
-    jq_result=$(./jq "${options}")
+    jq_result=$(./jq "${@}")
   else
-    jq_result=$(jq "${options}")
+    jq_result=$(jq "${@}")
   fi
   echo "${jq_result}"
 }
