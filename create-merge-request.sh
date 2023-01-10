@@ -2,6 +2,7 @@
 # shellcheck disable=SC2181
 
 #TODO: (鲁棒性）异常输入测试用例补充：源分支不存在、目标分支不存在、审批人不存在（查无此人）、审批人无权限(无权限则报错，高级用法，未实现）
+#FIXME: 根据project_name通过search查询可能会查出多个，比如o2-inventory可能就查出了o2-inventory-management，然后取了第一个[0]
 
 DEFAULT_PROJECTS=(
   "o2-consignment-b2c"
@@ -17,7 +18,7 @@ DEFAULT_PROJECTS=(
   "o2-monitor")
 
 # Don't forget to make desensitization processing for FEMALE_MEMBERS
-YOUR_ACCESS_TOKEN="在这里替换你gitlab生成的ACCESS_TOKEN"
+YOUR_ACCESS_TOKEN=""
 DEFAULT_ASSIGN_NAME="程厚霖"
 FEMALE_MEMBERS=("柳" "欢欢")
 
@@ -63,7 +64,7 @@ function print_project_info() {
 
 function check_empty() {
   local param=$1
-  if [[ -z "$param" || "$param" =~ ^[\ ]*$ ]]; then
+  if [[ -z "$param" || "$param" =~ ^[\ ]*$ || "$param" == "null" ]]; then
     echo "true"
   else
     echo "false"
@@ -193,6 +194,8 @@ function fetch_project_id() {
   local PROJECT_NAME=$1
   local project_resp
   local PROJECT_ID
+  local project_name
+  local path_with_namespace
 
   if [[ $(check_empty "$PROJECT_NAME") == "true" ]]; then
     printf "\033[31mError: 您选择的项目不允许为空，请重新运行脚本后正确选择你拥有权限的项目 \033[0m\n" >&2
@@ -204,7 +207,21 @@ function fetch_project_id() {
   debug_echo "start curl: ${project_fetch_url}"
   # Get the project ID from the project name
   project_resp=$(curl -s "${project_fetch_url}")
-  PROJECT_ID=$(compatible_jq "$project_resp" -r '.[0].id')
+
+  #【坑点：无法成功用jq解析为json数组】只能这么做foi循环
+  for ((i = 0; i < 10; i++)); do
+    project_name=$(compatible_jq "${project_resp}" -r ".[${i}].name")
+    path_with_namespace=$(compatible_jq "${project_resp}" -r ".[${i}].path_with_namespace")
+    if [[ $(check_empty "$project_name") == "true" ]]; then
+      #表示后面不再有了，就break退出
+      break
+    fi
+    if [[ "${project_name}" == "${PROJECT_NAME}" && "$path_with_namespace" != *"runtime"* ]]; then
+      PROJECT_ID=$(compatible_jq "${project_resp}" -r ".[${i}].id")
+      break
+    fi
+  done
+  # 精准匹配项目名称
   exit_check
 
   if [[ $(check_empty "$PROJECT_ID") == "true" ]]; then
@@ -300,12 +317,12 @@ function submit_merge_request() {
   debug_echo "----------------------------------------"
 
   curl_resp=$(curl -X POST -i "$API_ENDPOINT" \
-    --header "PRIVATE-TOKEN: $ACCESS_TOKEN" \
-    --form "source_branch=$SOURCE_BRANCH" \
-    --form "target_branch=$TARGET_BRANCH" \
+    --header "PRIVATE-TOKEN: ${ACCESS_TOKEN}" \
+    --form "source_branch=${SOURCE_BRANCH}" \
+    --form "target_branch=${TARGET_BRANCH}" \
     --form "remove_source_branch=false" \
-    --form "assignee_id=$ASSIGNEE_ID" \
-    --form "title=$title")
+    --form "assignee_id=${ASSIGNEE_ID}" \
+    --form "title=${title}")
   if [[ $(curl_resp_success_check "${curl_resp}") == "true" ]]; then
     printf "\033[32m项目：%s 代码合并请求提交成功!! \n\033[0m" "$PROJECT_NAME"
   else
