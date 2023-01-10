@@ -17,7 +17,7 @@ DEFAULT_PROJECTS=(
   "o2-monitor")
 
 # Don't forget to make desensitization processing for FEMALE_MEMBERS
-YOUR_ACCESS_TOKEN="在这里替换为你在猪齿鱼gitlab中的ACCESS_TOKEN"
+YOUR_ACCESS_TOKEN="glpat-2ba-xoCxqZaZ7GyN35mi"
 DEFAULT_ASSIGN_NAME="程厚霖"
 FEMALE_MEMBERS=("柳" "欢欢")
 
@@ -263,12 +263,12 @@ function render_assignee_nick_name() {
 function render_merge_request_title() {
   local assignee_name="$1"
   local nick_name
-  nick_name=$(render_assignee_nick_name "$assignee_name")
+  nick_name=$(render_assignee_nick_name "${assignee_name}")
   if [[ $WINDOWS_FLAG == 1 ]]; then
     # really hard to curl with Chinese in Windows, so transform -> English
     echo "Hello there! Would you mind helping me merge this pretty code? Thank you in advance!"
   else
-    echo "$nick_name，能帮我合下代码吗，谢谢！"
+    echo "${nick_name}，能帮我合下代码吗，谢谢！"
   fi
 }
 
