@@ -31,6 +31,12 @@ GITLAB_HOST=${2:-"code.choerodon.com.cn"}
 ACCESS_TOKEN=${3:-"${YOUR_ACCESS_TOKEN}"}
 DEFAULT_ASSIGN_NAME=${4:-"${DEFAULT_ASSIGN_NAME}"}
 OS=$(uname)
+WINDOWS_FLAG=0
+if [[ "${OS}" == *"MINGW"* ]]; then
+  WINDOWS_FLAG=1
+else
+  WINDOWS_FLAG=0
+fi
 
 function debug_echo() {
   local echo_content="$1"
@@ -88,7 +94,6 @@ function auto_install_tool() {
   local arch
   # check if jq is installed
   jq_test
-  local windows_os_flag=0
   if [ $? -ne 0 ]; then
     # jq is not installed
     # check the operating system type
@@ -109,13 +114,13 @@ function auto_install_tool() {
     esac
 
     if [[ "${OS}" == *"MINGW"* ]]; then
-      windows_os_flag=1
+      WINDOWS_FLAG=1
     fi
 
     # check if jq is installed successfully
     jq_test
     if [ $? -ne 0 ]; then
-      if [[ ${windows_os_flag} == 1 ]]; then
+      if [[ ${WINDOWS_FLAG} == 1 ]]; then
         printf "\033[31mError: 必要组件jq.exe不存在，请检查当前脚本所在文件夹内是否包含必需的文件jq.exe! \033[0m\n" >&2
       else
         printf "\033[31mError: jq自动安装失败，请手动安装必要软件jq! \033[0m\n" >&2
@@ -240,12 +245,30 @@ function fetch_assignee_id() {
 
 function render_assignee_nick_name() {
   local assignee_name="$1"
-  if [[ "$assignee_name" == "孙柳" ]]; then
-    echo "柳哥"
-  elif [[ " ${FEMALE_MEMBERS[*]} " =~ ${assignee_name} ]]; then
-    echo "${assignee_name}女士"
+
+  if [[ $WINDOWS_FLAG == 1 ]]; then
+    # really hard to curl with Chinese in Windows, so transform -> English
+    echo ""
   else
-    echo "${assignee_name}大哥"
+    if [[ "$assignee_name" == "孙柳" ]]; then
+      echo "柳哥柳哥"
+    elif [[ " ${FEMALE_MEMBERS[*]} " =~ ${assignee_name} ]]; then
+      echo "${assignee_name}女士"
+    else
+      echo "${assignee_name}大哥"
+    fi
+  fi
+}
+
+function render_merge_request_title() {
+  local assignee_name="$1"
+  local nick_name
+  nick_name=$(render_assignee_nick_name "$assignee_name")
+  if [[ $WINDOWS_FLAG == 1 ]]; then
+    # really hard to curl with Chinese in Windows, so transform -> English
+    echo "Hello there! Would you mind helping me merge this pretty code? Thank you in advance!"
+  else
+    echo "$nick_name，能帮我合下代码吗，谢谢！"
   fi
 }
 
@@ -260,6 +283,8 @@ function submit_merge_request() {
   local ORIGIN_ASSIGNEE_NAME=$7
   local curl_resp
   local API_ENDPOINT
+  local title
+  title=$(render_merge_request_title "${ORIGIN_ASSIGNEE_NAME}")
 
   # Set the API endpoint and create the merge request
   API_ENDPOINT=$(printf "${DEFAULT_SUBMIT_MERGE_REQUEST_API}" "$GITLAB_HOST" "$PROJECT_ID")
@@ -270,16 +295,17 @@ function submit_merge_request() {
   debug_echo "ASSIGNEE_ID: ${ASSIGNEE_ID}"
   debug_echo "SOURCE_BRANCH: ${SOURCE_BRANCH}"
   debug_echo "TARGET_BRANCH: ${TARGET_BRANCH}"
-  debug_echo "ASSIGNEE_NAME: ${ASSIGNEE_NAME}"
+  debug_echo "ASSIGNEE_NAME: ${ORIGIN_ASSIGNEE_NAME}"
+  debug_echo "title: $title"
   debug_echo "----------------------------------------"
 
-  curl_resp=$(curl -v -X POST -i "$API_ENDPOINT" \
-  --header "PRIVATE-TOKEN: $ACCESS_TOKEN" \
-  --form "source_branch=$SOURCE_BRANCH" \
-  --form "target_branch=$TARGET_BRANCH" \
-  --form "remove_source_branch=false" \
-  --form "assignee_id=$ASSIGNEE_ID" \
-  --form "title=${ORIGIN_ASSIGNEE_NAME}大哥，帮我合下代码，谢谢！")
+  curl_resp=$(curl -X POST -i "$API_ENDPOINT" \
+    --header "PRIVATE-TOKEN: $ACCESS_TOKEN" \
+    --form "source_branch=$SOURCE_BRANCH" \
+    --form "target_branch=$TARGET_BRANCH" \
+    --form "remove_source_branch=false" \
+    --form "assignee_id=$ASSIGNEE_ID" \
+    --form "title=$title")
   if [[ $(curl_resp_success_check "${curl_resp}") == "true" ]]; then
     printf "\033[32m项目：%s 代码合并请求提交成功!! \n\033[0m" "$PROJECT_NAME"
   else
