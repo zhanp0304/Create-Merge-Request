@@ -17,7 +17,7 @@ DEFAULT_PROJECTS=(
   "o2-monitor")
 
 # Don't forget to make desensitization processing for FEMALE_MEMBERS
-YOUR_ACCESS_TOKEN="glpat-2ba-xoCxqZaZ7GyN35mi"
+YOUR_ACCESS_TOKEN="在这里替换你gitlab生成的ACCESS_TOKEN"
 DEFAULT_ASSIGN_NAME="程厚霖"
 FEMALE_MEMBERS=("柳" "欢欢")
 
