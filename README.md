@@ -1,3 +1,9 @@
+
+使用教程：
+1. 到猪齿鱼gitlab，地址https://code.choerodon.com.cn/-/profile/personal_access_tokens生成自己的ACCESS_TOKEN
+2. 修改create-merge.request.sh文件，搜索下YOUR_ACCESS_TOKEN，先替换为自己的ACCESS_TOKEN。
+
+
 声明：本脚本致力于为O2降本增效，解决了猪齿鱼gitlab界面需要重复操作多次的痛点问题，尤其适用于需要同时对多个代码仓库提合并请求的场景。 作者：zhanpeng.jiang
 <p>主要功能：可以同时选择多个项目，以及多个目标分支，将根据同一个源分支，同时对多个代码仓库及其多个目标分支提合并请求。</p>
 <p>创造背景：入场OMS模块后，因为需要同时维护多个平台如天猫、京东、PUB平台、官网平台的代码，共四个平台，对应四个代码仓库。</p>
