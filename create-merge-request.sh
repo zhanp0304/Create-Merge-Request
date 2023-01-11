@@ -238,7 +238,7 @@ function fetch_assignee_id() {
   local ASSIGNEE_NAME=$1
   local assignee_fetch_url
   local ASSIGNEE_ID
-  local project_resp
+  local assignee_resp
 
   if [[ $(check_empty "ASSIGNEE_NAME") == "true" ]]; then
     printf "\033[31mError: 您选择的审批人不允许为空，请重新运行脚本后正确选择团队中有该项目权限的审批人 \033[0m\n" >&2
@@ -247,8 +247,8 @@ function fetch_assignee_id() {
   # test curl
   assignee_fetch_url=$(printf "${DEFAULT_ASSIGNEE_FETCH_API}" "$GITLAB_HOST" "$ACCESS_TOKEN" "$ASSIGNEE_NAME")
   debug_echo "start curl: ${assignee_fetch_url}"
-  project_resp=$(curl -s "${assignee_fetch_url}")
-  ASSIGNEE_ID=$(compatible_jq "$project_resp" -r '.[0].id')
+  assignee_resp=$(curl -s "${assignee_fetch_url}")
+  ASSIGNEE_ID=$(compatible_jq "$assignee_resp" -r '.[0].id')
   exit_check
 
   if [[ $(check_empty "$ASSIGNEE_ID") == "true" ]]; then
