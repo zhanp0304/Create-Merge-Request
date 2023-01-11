@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # shellcheck disable=SC2181
 
 #TODO: (鲁棒性）异常输入测试用例补充：源分支不存在、目标分支不存在、审批人不存在（查无此人）、审批人无权限(无权限则报错，高级用法，未实现）
@@ -260,19 +260,40 @@ function fetch_assignee_id() {
   echo "$ASSIGNEE_ID"
 }
 
+# check assignee name whether it contains female member or not
+function female_name_any_contains() {
+  local assignee_name="${1}"
+  for female_name in "${FEMALE_MEMBERS[@]}"; do
+    if [[ "${assignee_name}" == *"${female_name}"* ]]; then
+      echo "true"
+      return
+    fi
+  done
+  echo "false"
+}
+
 function render_assignee_nick_name() {
   local assignee_name="$1"
+  local assignee_name_arr
+
+  assignee_name_arr=("$assignee_name")
+  if [[ ${#assignee_name_arr[@]} -gt 2 ]]; then
+    # split the assignee_name(last two substring) for politeness
+    assignee_name="${assignee_name_arr[-2]}"+"${assignee_name_arr[-1]}"
+  fi
 
   if [[ $WINDOWS_FLAG == 1 ]]; then
     # really hard to curl with Chinese in Windows, so transform -> English
     echo ""
   else
     if [[ "$assignee_name" == "孙柳" ]]; then
-      echo "柳哥柳哥"
-    elif [[ " ${FEMALE_MEMBERS[*]} " =~ ${assignee_name} ]]; then
-      echo "${assignee_name}女士"
+      echo "Hello, 柳哥"
+    elif [[ "$assignee_name" == *"欢欢"* ]]; then
+      echo "Hello, 欢欢"
+    elif [[ $(female_name_any_contains "${assignee_name}") == "true" ]]; then
+      echo "Hello, ${assignee_name}"
     else
-      echo "${assignee_name}大哥"
+      echo "Hello, ${assignee_name}大哥"
     fi
   fi
 }
@@ -285,7 +306,7 @@ function render_merge_request_title() {
     # really hard to curl with Chinese in Windows, so transform -> English
     echo "Hello there! Would you mind helping me merge this pretty code? Thank you in advance!"
   else
-    echo "${nick_name}，能帮我合下代码吗，谢谢！"
+    echo "${nick_name}, 能麻烦您抽空帮我合下这份漂亮的代码吗，非常感谢~"
   fi
 }
 
@@ -357,7 +378,8 @@ while true; do
   read -p $'\033[34m请输入源分支名: \033[0m' -r SOURCE_BRANCH
   read -p $'\033[34m请输入目标分支名（若要选择多个则以空格分隔输入）: \033[0m' -r -a target_branches
   #  read -p $'\033[34m请输入审批人名称（直接回车将默认分配给'"${ASSIGNEE_NAME}"$'进行合并）: \033[0m' -r assignee_name_user_input
-  read -p $'\033[34m请输入审批人名称（直接回车将默认分配'"${ASSIGNEE_NAME}"$'进行合并)\033[0m' -r assignee_name_user_input
+  read -p $'\033[34m请输入审批人名称（直接回车将默认分配'"${ASSIGNEE_NAME}"$'进行合并)\033[0m' -r -a assignee_name_user_input
+
   if [[ -n "$assignee_name_user_input" && ! "$assignee_name_user_input" =~ ^[\ ]*$ ]]; then
     debug_echo "pick assignee name: $assignee_name_user_input"
     ASSIGNEE_NAME="$assignee_name_user_input"
